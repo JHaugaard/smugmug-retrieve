@@ -3,60 +3,82 @@
 ## Project Overview
 Node.js/React application for migrating ~4,600 photos/videos from SmugMug to Backblaze B2, preserving metadata (especially keywords) via JSON sidecar files.
 
-## Current Status:  WORKING END-TO-END
+## Current Status: ✅ WORKING END-TO-END
 
-### Latest Achievement (2025-11-24)
+### Latest Session (2025-11-25)
+
+**Fixes Completed:**
+1. **Start Migration Button** - Fixed button staying grayed out after OAuth authentication
+   - Simplified disabled logic to only check `oauthState.authenticated`
+   - Added error clearing when SmugMug OAuth and B2 test succeed
+   - [ConfigurationScreen.jsx:396](frontend/src/components/ConfigurationScreen.jsx#L396)
+
+2. **Video Filtering** - Added "Exclude videos" option (default: enabled)
+   - Videos now filtered DURING enumeration, not after
+   - Fixes issue where test mode grabbed only videos from first album
+   - UI checkbox added to Migration Options
+   - [AssetInventoryService.js:75-79](backend/src/services/AssetInventoryService.js#L75-L79)
+   - [ConfigurationScreen.jsx:366-375](frontend/src/components/ConfigurationScreen.jsx#L366-L375)
+
+3. **JSON Sidecar Structure** - Fixed `filename: "unknown"` bug and cleaned up structure
+   - MetadataService now properly handles Asset objects (was expecting raw API data)
+   - Added `normalizeSource()` method to detect input type
+   - Cleaner, flatter JSON output with keywords as top-level array
+   - [MetadataService.js:16-163](backend/src/services/MetadataService.js#L16-L163)
+   - [AssetUploadService.js:64](backend/src/services/AssetUploadService.js#L64)
+
+**Housekeeping:**
+- Removed `.bmad-core` directory (unused BMAD framework files)
+- Deleted `affectionate-antonelli` branch (abandoned worktree experiment from Claude Desktop)
+
+### New JSON Sidecar Format
+```json
+{
+  "filename": "photo 9.jpg",
+  "smugmugAssetId": "nT9PLcn",
+  "albumName": "Kline and Martin Photos",
+  "albumKey": "DRLkfT",
+  "retrievedFromSmugmug": "2025-11-25T...",
+  "dateTaken": "2015-02-23T01:35:29+00:00",
+  "dateUploaded": "2019-07-13T17:03:38+00:00",
+  "keywords": ["Martin", "Pat", "Portrait", "Car", "Eileen"],
+  "format": "JPG",
+  "fileSize": 613231,
+  "dimensions": { "width": 1517, "height": 1015 },
+  "webUri": "https://haugaard.smugmug.com/Kline-Martin-Photos/i-nT9PLcn"
+}
+```
+
+### Previous Session (2025-11-24)
 Successfully completed first test migration:
--  SmugMug OAuth 1.0a authentication working
--  Album discovery working (found 2 albums, 1,106 total assets)
--  Asset enumeration working (tested with 5 videos)
--  Downloads from SmugMug working
--  Metadata extraction working
--  Uploads to Backblaze B2 working
--  Test completed in 3 seconds with 0 errors
+- ✅ SmugMug OAuth 1.0a authentication working
+- ✅ Album discovery working (found 2 albums, 1,106 total assets)
+- ✅ Asset enumeration working
+- ✅ Downloads from SmugMug working
+- ✅ Metadata extraction working
+- ✅ Uploads to Backblaze B2 working
 
-**Test Results:**
-- Session ID: `e554faa0-e9b2-4ab7-8d95-316d18958353`
-- 5 videos downloaded (114.89 KB total)
-- 15 files uploaded to B2 (videos + JSON metadata sidecars)
-- Duration: 3 seconds
-- Success rate: 100%
+## Fixed Issues (All Sessions)
 
-## Fixed Issues
-
-### 1. SmugMug API Path Duplication
+### SmugMug API Path Duplication
 **Problem:** URIs were duplicated like `/api/v2/api/v2/user/...`
 **Fix:** Updated `SmugMugService.makeAuthenticatedRequest()` to detect paths already containing `/api/v2`
-- [SmugMugService.js:181-192](backend/src/services/SmugMugService.js#L181-L192)
 
-### 2. OAuth Signature Invalid (401 errors)
+### OAuth Signature Invalid (401 errors)
 **Problem:** Query parameters weren't included in OAuth signature calculation
 **Fix:** Added query params to `requestData.data` for GET requests before signing
-- [SmugMugService.js:200-203](backend/src/services/SmugMugService.js#L200-L203)
 
-### 3. Service Dependency Injection
+### Service Dependency Injection
 **Problem:** Multiple services had missing constructor parameters
-**Fixes:**
-- `ErrorLogger`: Now receives `(fileSystemManager, sessionId)` - [MigrationOrchestrator.js:41](backend/src/services/MigrationOrchestrator.js#L41)
-- `AssetDownloadService`: Now receives `fileSystemManager` - [MigrationOrchestrator.js:240](backend/src/services/MigrationOrchestrator.js#L240)
-- `AssetUploadService`: Now receives `errorLogger` and `progressTracker` - [MigrationOrchestrator.js:242-249](backend/src/services/MigrationOrchestrator.js#L242-L249)
+**Fixes:** ErrorLogger, AssetDownloadService, AssetUploadService all properly initialized
 
-### 4. Backblaze B2 Restricted Keys
+### Backblaze B2 Restricted Keys
 **Problem:** Restricted application keys couldn't call `listBuckets()` without parameters
 **Fix:** Check `authData.allowed.bucketId` first for restricted keys
-- [BackBlazeB2Service.js:75-93](backend/src/services/BackBlazeB2Service.js#L75-L93)
 
-### 5. SmugMug OAuth Flow
-**Problem:** `requestTokenSecret` not being passed from backend to frontend
-**Fixes:**
-- Return `requestTokenSecret` in service - [SmugMugService.js:88](backend/src/services/SmugMugService.js#L88)
-- Pass through route - [migration.routes.js:193,200](backend/src/routes/migration.routes.js#L193)
-- Use in frontend - [ConfigurationScreen.jsx:68](frontend/src/components/ConfigurationScreen.jsx#L68)
-
-### 6. Method Name Mismatches
-**Problem:** `getLogFilePath()` method doesn't exist on FileSystemManager
-**Fix:** Use `getPaths().logs` instead
-- [MigrationOrchestrator.js:383](backend/src/services/MigrationOrchestrator.js#L383)
+### Video-Only Album Issue
+**Problem:** Test mode with 10 assets grabbed only videos from "Home Movies" album, then filtering removed all
+**Fix:** Filter videos during enumeration, continue to next album until target count reached
 
 ## Architecture Notes
 
@@ -67,42 +89,9 @@ Successfully completed first test migration:
   - `SmugMugService`: OAuth 1.0a + API v2
   - `BackBlazeB2Service`: B2 uploads with restricted key support
   - `MigrationOrchestrator`: Coordinates entire workflow
-  - `AssetInventoryService`: Enumerates assets with pagination
-  - `MetadataService`: Generates JSON sidecars
+  - `AssetInventoryService`: Enumerates assets with pagination, video filtering
+  - `MetadataService`: Generates JSON sidecars (handles both Asset objects and raw API data)
   - `ErrorLogger`: Structured error tracking
-
-### Testing Method
-Using curl via [test-migration.sh](backend/test-migration.sh) with environment variables:
-```bash
-export SMUGMUG_SECRET="..."
-export SMUGMUG_ACCESS_TOKEN="..."
-export SMUGMUG_ACCESS_SECRET="..."
-bash test-migration.sh
-```
-
-## Next Steps
-
-### Immediate
-1. User to investigate downloaded files and verify keyword preservation in JSON
-2. Confirm what the 15 uploaded files represent (likely 5�3: video + JSON + ?)
-3. Consider running test with photos instead of videos
-
-### Future Enhancements
-1. Fix UI state management for OAuth tokens (currently bypassing with curl)
-2. Test with larger photo album "Kline and Martin Photos" (1,063 assets)
-3. Run full migration of all 1,106 assets
-4. Verify all metadata fields are preserved, especially Keywords
-
-## Credentials & Configuration
-
-**SmugMug API:**
-- API Key: `XJCbKrt8V6zTs8QqVvSznzK4sqv7G3qh`
-- Using OAuth 1.0a with access tokens stored in environment variables
-
-**Backblaze B2:**
-- Bucket: `smugmug-retrieve-test`
-- Using restricted application key
-- Account ID: `000680229fef358000000000e`
 
 ## Running the Application
 
@@ -118,30 +107,42 @@ cd frontend
 npm start  # Runs on port 3000
 ```
 
-**Test Migration (Backend only needed):**
-```bash
-cd backend
-export SMUGMUG_SECRET="..."
-export SMUGMUG_ACCESS_TOKEN="..."
-export SMUGMUG_ACCESS_SECRET="..."
-bash test-migration.sh
-```
+## Next Steps
 
-## Known Issues
+### Ready to Test
+- Run migration with new JSON structure to verify filename and keywords are correct
+- Confirm cleaner JSON output in B2
 
-1. **Frontend OAuth State Management:** Start Migration button doesn't activate properly after OAuth completion. Workaround: Use curl/test script.
+### Future Enhancements
+1. Test with larger batches (50, 100 images)
+2. Run full migration of all ~1,063 images
+3. Add progress persistence/resume capability
+4. Consider adding date-based folder organization in B2
 
-2. **Success Count:** Shows 15 successful operations for 5 assets - need to verify what operations are being counted.
+## Credentials & Configuration
 
-## Files Modified This Session
+**SmugMug API:**
+- API Key: `XJCbKrt8V6zTs8QqVvSznzK4sqv7G3qh`
+- Using OAuth 1.0a with access tokens stored in environment variables
 
-- `backend/src/services/SmugMugService.js` - OAuth signature fixes, path handling
-- `backend/src/services/BackBlazeB2Service.js` - Restricted key support
-- `backend/src/services/MigrationOrchestrator.js` - Service initialization order
-- `backend/src/services/AssetInventoryService.js` - Album images URI construction
-- `backend/src/routes/migration.routes.js` - OAuth token passing
-- `backend/test-migration.sh` - Test script with credentials
-- `backend/test-b2.js` - B2 connection test with restricted keys
+**Backblaze B2:**
+- Bucket: `smugmug-retrieve-test`
+- Using restricted application key
+- Account ID: `000680229fef358000000000e`
+
+## Files Modified This Session (2025-11-25)
+
+- `frontend/src/components/ConfigurationScreen.jsx` - Button fix, excludeVideos checkbox, error clearing
+- `backend/src/routes/migration.routes.js` - excludeVideos parameter handling
+- `backend/src/services/MigrationOrchestrator.js` - Pass excludeVideos to inventory service
+- `backend/src/services/AssetInventoryService.js` - Video filtering during enumeration
+- `backend/src/services/MetadataService.js` - Complete rewrite of extractMetadata, normalizeSource
+- `backend/src/services/AssetUploadService.js` - Simplified metadata extraction call
+
+## Git Status
+- Branch: `main`
+- Last commit: `9b1f4a8` (Debugging and file clean up)
+- Deleted branch: `affectionate-antonelli` (worktree experiment)
 
 ## Contact & Resources
 
