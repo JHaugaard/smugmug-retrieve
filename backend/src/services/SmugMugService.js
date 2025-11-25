@@ -85,6 +85,7 @@ class SmugMugService {
 
       return {
         requestToken: this.requestToken,
+        requestTokenSecret: this.requestTokenSecret,
         authorizeUrl,
       };
     } catch (error) {
@@ -177,14 +178,29 @@ class SmugMugService {
         throw new Error('Not authenticated. Access token required.');
       }
 
-      const url = endpoint.startsWith('http')
-        ? endpoint
-        : `${this.apiBaseUrl}${endpoint}`;
+      // Build full URL - handle full URLs, API paths, and relative endpoints
+      let url;
+      if (endpoint.startsWith('http')) {
+        // Full URL provided
+        url = endpoint;
+      } else if (endpoint.startsWith('/api/v2')) {
+        // Already has API version path, just add domain
+        url = `https://api.smugmug.com${endpoint}`;
+      } else {
+        // Relative endpoint, add full base URL
+        url = `${this.apiBaseUrl}${endpoint}`;
+      }
 
+      // For OAuth signature, we need to include query params in the request data
       const requestData = {
         url,
         method,
       };
+
+      // Add query params to OAuth signature for GET requests
+      if (method === 'GET' && Object.keys(params).length > 0) {
+        requestData.data = params;
+      }
 
       const token = {
         key: this.accessToken,
@@ -224,7 +240,7 @@ class SmugMugService {
    */
   async getAuthenticatedUser() {
     try {
-      const response = await this.makeAuthenticatedRequest('/user/cmac!authuser');
+      const response = await this.makeAuthenticatedRequest('!authuser');
       this.authUser = response.Response.User;
       return this.authUser;
     } catch (error) {
@@ -257,12 +273,12 @@ class SmugMugService {
 
   /**
    * Get user's albums
-   * @param {string} userUri - User URI (e.g., '/api/v2/user/username')
+   * @param {string} albumsUri - Albums URI (e.g., '/api/v2/user/username!albums')
    * @returns {Promise<Array>} List of albums
    */
-  async getAlbums(userUri) {
+  async getAlbums(albumsUri) {
     try {
-      const response = await this.makeAuthenticatedRequest(`${userUri}!albums`);
+      const response = await this.makeAuthenticatedRequest(albumsUri);
       return response.Response.Album || [];
     } catch (error) {
       throw new Error(`Failed to get albums: ${error.message}`);
@@ -271,15 +287,15 @@ class SmugMugService {
 
   /**
    * Get images from an album
-   * @param {string} albumUri - Album URI
+   * @param {string} albumImagesUri - Album images URI (should include !images if needed)
    * @param {number} start - Start index for pagination
    * @param {number} count - Number of images to fetch
    * @returns {Promise<object>} Images data with pagination info
    */
-  async getAlbumImages(albumUri, start = 1, count = 100) {
+  async getAlbumImages(albumImagesUri, start = 1, count = 100) {
     try {
       const response = await this.makeAuthenticatedRequest(
-        `${albumUri}!images`,
+        albumImagesUri,
         'GET',
         { start, count }
       );

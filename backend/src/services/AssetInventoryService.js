@@ -185,7 +185,7 @@ class AssetInventoryService {
         }
 
         const result = await this.smugmugService.getAlbumImages(
-          album.uri,
+          `${album.uri}!images`,
           start,
           count
         );

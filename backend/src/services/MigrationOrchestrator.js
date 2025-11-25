@@ -35,10 +35,10 @@ class MigrationOrchestrator {
     this.config = config;
     this.sessionId = uuidv4();
 
-    // Initialize services
-    this.progressTracker = new ProgressTracker(this.sessionId);
-    this.errorLogger = new ErrorLogger(this.sessionId);
+    // Initialize services (order matters - FileSystemManager must be first)
     this.fileSystemManager = new FileSystemManager(this.sessionId);
+    this.progressTracker = new ProgressTracker(this.sessionId);
+    this.errorLogger = new ErrorLogger(this.fileSystemManager, this.sessionId);
 
     // Service instances (initialized during workflow)
     this.smugmugService = null;
@@ -237,13 +237,15 @@ class MigrationOrchestrator {
 
     try {
       // Initialize processing services
-      const downloadService = new AssetDownloadService(this.smugmugService);
+      const downloadService = new AssetDownloadService(this.smugmugService, this.fileSystemManager);
       const metadataService = new MetadataService();
       const uploadService = new AssetUploadService(
         downloadService,
         metadataService,
         this.b2Service,
-        this.fileSystemManager
+        this.fileSystemManager,
+        this.errorLogger,
+        this.progressTracker
       );
 
       // Configure services
@@ -329,11 +331,9 @@ class MigrationOrchestrator {
 
     try {
       // Save error log
-      const errorLogPath = this.fileSystemManager.getLogFilePath('error-log.json');
-      await this.errorLogger.saveErrorLog(errorLogPath);
+      await this.errorLogger.saveErrorLog();
 
       // Generate migration summary
-      const summaryPath = this.fileSystemManager.getLogFilePath('migration-summary.json');
       const summary = this.generateSummary();
       await this.fileSystemManager.writeLog('migration-summary.json', JSON.stringify(summary, null, 2));
 
@@ -380,7 +380,7 @@ class MigrationOrchestrator {
       testMode: this.config.testMode,
       testAssetLimit: this.config.testAssetLimit,
       bucketName: this.config.backblaze.bucketName,
-      errorLogPath: this.fileSystemManager.getLogFilePath('error-log.json'),
+      errorLogPath: `${this.fileSystemManager.getPaths().logs}/error-log.json`,
       errors: errorSummary
     };
   }

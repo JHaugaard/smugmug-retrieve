@@ -190,13 +190,14 @@ router.post('/test/smugmug', async (req, res) => {
     }
 
     // Otherwise, initiate OAuth flow
-    const { requestToken, authorizeUrl } = await smugmugService.getRequestToken('oob');
+    const { requestToken, requestTokenSecret, authorizeUrl } = await smugmugService.getRequestToken('oob');
 
     res.json({
       success: true,
       message: 'Authorization required',
       requiresAuth: true,
       requestToken,
+      requestTokenSecret,
       authorizeUrl,
       instructions: 'Visit the authorization URL, approve access, and provide the verification code'
     });
@@ -216,6 +217,15 @@ router.post('/test/smugmug', async (req, res) => {
 router.post('/smugmug/verify', async (req, res) => {
   try {
     const { apiKey, apiSecret, requestToken, requestTokenSecret, verifier } = req.body;
+
+    // Debug logging
+    console.log('OAuth verify request received:', {
+      apiKey: apiKey ? `${apiKey.substring(0, 10)}...` : 'MISSING',
+      apiSecret: apiSecret ? 'present' : 'MISSING',
+      requestToken: requestToken ? `${requestToken.substring(0, 10)}...` : 'MISSING',
+      requestTokenSecret: requestTokenSecret ? `${requestTokenSecret.substring(0, 10)}...` : 'MISSING',
+      verifier: verifier || 'MISSING'
+    });
 
     if (!apiKey || !apiSecret || !requestToken || !requestTokenSecret || !verifier) {
       return res.status(400).json({

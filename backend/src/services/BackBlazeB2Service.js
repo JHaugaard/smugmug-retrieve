@@ -72,7 +72,27 @@ class BackBlazeB2Service {
         await this.authorize();
       }
 
-      // List buckets to find the specified one
+      // For restricted keys, the bucket info is in the auth response
+      const allowed = this.authData.allowed;
+      if (allowed && allowed.bucketId && allowed.bucketName === bucketName) {
+        this.bucketId = allowed.bucketId;
+        this.bucket = {
+          bucketId: allowed.bucketId,
+          bucketName: allowed.bucketName,
+          bucketType: 'allPrivate', // Assume private for restricted keys
+        };
+
+        return {
+          success: true,
+          bucket: {
+            id: this.bucketId,
+            bucketName: allowed.bucketName,
+            bucketType: this.bucket.bucketType,
+          },
+        };
+      }
+
+      // Fall back to listBuckets for unrestricted keys
       const response = await this.b2.listBuckets({
         bucketName: bucketName,
       });
@@ -88,8 +108,8 @@ class BackBlazeB2Service {
         success: true,
         bucket: {
           id: this.bucket.bucketId,
-          name: this.bucket.bucketName,
-          type: this.bucket.bucketType,
+          bucketName: this.bucket.bucketName,
+          bucketType: this.bucket.bucketType,
         },
       };
     } catch (error) {

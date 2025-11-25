@@ -65,7 +65,7 @@ function ConfigurationScreen({ onStart }) {
         // OAuth flow required
         setOauthState({
           requestToken: data.requestToken,
-          requestTokenSecret: data.requestToken, // Note: API should return requestTokenSecret
+          requestTokenSecret: data.requestTokenSecret,
           authorizeUrl: data.authorizeUrl,
           isAuthenticating: true,
           authenticated: false,
@@ -169,6 +169,16 @@ function ConfigurationScreen({ onStart }) {
 
   const handleStartMigration = async () => {
     // Validate all fields
+    console.log('Starting migration with config:', {
+      smugmugApiKey: config.smugmugApiKey ? 'present' : 'MISSING',
+      smugmugApiSecret: config.smugmugApiSecret ? 'present' : 'MISSING',
+      smugmugAccessToken: config.smugmugAccessToken ? 'present' : 'MISSING',
+      smugmugAccessTokenSecret: config.smugmugAccessTokenSecret ? 'present' : 'MISSING',
+      b2AccountId: config.b2AccountId ? 'present' : 'MISSING',
+      b2ApplicationKey: config.b2ApplicationKey ? 'present' : 'MISSING',
+      b2BucketName: config.b2BucketName ? 'present' : 'MISSING'
+    });
+
     const newErrors = {};
     if (!config.smugmugApiKey) newErrors.smugmugApiKey = 'Required';
     if (!config.smugmugApiSecret) newErrors.smugmugApiSecret = 'Required';
@@ -179,9 +189,12 @@ function ConfigurationScreen({ onStart }) {
     if (!config.b2BucketName) newErrors.b2BucketName = 'Required';
 
     if (Object.keys(newErrors).length > 0) {
+      console.error('Validation errors:', newErrors);
       setErrors(newErrors);
       return;
     }
+
+    console.log('Validation passed, starting migration...');
 
     try {
       const response = await fetch('/api/migration/start', {
