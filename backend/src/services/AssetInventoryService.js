@@ -69,12 +69,14 @@ class AssetInventoryService {
   /**
    * Build complete asset inventory from account structure
    * @param {number} testLimit - Limit assets for testing (0 = no limit)
+   * @param {boolean} excludeVideos - Whether to exclude video assets
    * @returns {Promise<Array<Asset>>}
    */
-  async buildInventory(testLimit = 0) {
+  async buildInventory(testLimit = 0, excludeVideos = false) {
     try {
       this.stats.startTime = new Date().toISOString();
       this.assets = [];
+      this.excludeVideos = excludeVideos;
 
       const albums = this.accountStructure.getAlbumsWithMedia();
       this.stats.totalAlbums = albums.length;
@@ -82,12 +84,17 @@ class AssetInventoryService {
       console.log(`\n✓ Starting asset enumeration`);
       console.log(`  Albums with media: ${albums.length}`);
       if (testLimit > 0) {
-        console.log(`  TEST MODE: Limiting to ${testLimit} assets\n`);
+        console.log(`  TEST MODE: Limiting to ${testLimit} assets`);
       }
+      if (excludeVideos) {
+        console.log(`  IMAGES ONLY: Excluding video files`);
+      }
+      console.log('');
 
       this.reportProgress('enumerate', 0, albums.length, 'Starting asset enumeration');
 
       let totalAssetsFound = 0;
+      let videosSkipped = 0;
 
       for (const album of albums) {
         // Check test limit
@@ -99,8 +106,10 @@ class AssetInventoryService {
         try {
           this.stats.processedAlbums++;
 
+          // Fetch more than needed if filtering videos, to ensure we get enough images
+          const remainingNeeded = testLimit > 0 ? testLimit - totalAssetsFound : 0;
           const albumAssetsToFetch = testLimit > 0
-            ? Math.min(album.getTotalMediaCount(), testLimit - totalAssetsFound)
+            ? Math.min(album.getTotalMediaCount(), remainingNeeded * 3) // Fetch 3x to account for videos
             : album.getTotalMediaCount();
 
           console.log(`[${this.stats.processedAlbums}/${albums.length}] ${album.name}`);
@@ -115,11 +124,12 @@ class AssetInventoryService {
           );
 
           // Enumerate assets in this album with pagination
-          const albumAssets = await this.enumerateAlbumAssets(album, albumAssetsToFetch);
+          const result = await this.enumerateAlbumAssets(album, albumAssetsToFetch, testLimit > 0 ? testLimit - totalAssetsFound : 0);
 
-          totalAssetsFound += albumAssets.length;
+          totalAssetsFound += result.added;
+          videosSkipped += result.videosSkipped;
 
-          console.log(`  Found: ${albumAssets.length} assets`);
+          console.log(`  Found: ${result.added} assets${result.videosSkipped > 0 ? ` (${result.videosSkipped} videos skipped)` : ''}`);
 
         } catch (error) {
           console.error(`  ❌ Error processing album "${album.name}":`, error.message);
@@ -137,12 +147,16 @@ class AssetInventoryService {
       this.stats.totalAssets = this.assets.length;
       this.stats.totalImages = this.assets.filter(a => a.isImage).length;
       this.stats.totalVideos = this.assets.filter(a => a.isVideo).length;
+      this.stats.videosSkipped = videosSkipped;
       this.stats.totalSize = this.assets.reduce((sum, a) => sum + (a.originalSize || 0), 0);
 
       console.log(`\n✓ Asset enumeration complete`);
       console.log(`  Total assets: ${this.stats.totalAssets}`);
       console.log(`  Images: ${this.stats.totalImages}`);
       console.log(`  Videos: ${this.stats.totalVideos}`);
+      if (videosSkipped > 0) {
+        console.log(`  Videos skipped: ${videosSkipped}`);
+      }
       console.log(`  Total size: ${this.getFormattedSize(this.stats.totalSize)}`);
       console.log(`  Errors: ${this.stats.errors.length}`);
 
@@ -161,21 +175,24 @@ class AssetInventoryService {
   /**
    * Enumerate all assets in a single album (with pagination)
    * @param {Album} album - Album to enumerate
-   * @param {number} limit - Maximum assets to fetch (0 = all)
-   * @returns {Promise<Array<Asset>>}
+   * @param {number} fetchLimit - Maximum assets to fetch from API (0 = all)
+   * @param {number} targetLimit - Target number of assets to add (for test mode with filtering)
+   * @returns {Promise<{added: number, videosSkipped: number}>}
    */
-  async enumerateAlbumAssets(album, limit = 0) {
-    const albumAssets = [];
+  async enumerateAlbumAssets(album, fetchLimit = 0, targetLimit = 0) {
+    let addedCount = 0;
+    let videosSkipped = 0;
     let start = 1;
     let hasMore = true;
+    let totalFetched = 0;
 
     while (hasMore) {
       await this.respectRateLimit();
 
       try {
         // Determine count for this page
-        const remainingToFetch = limit > 0 ? limit - albumAssets.length : this.imagesPerPage;
-        const count = limit > 0
+        const remainingToFetch = fetchLimit > 0 ? fetchLimit - totalFetched : this.imagesPerPage;
+        const count = fetchLimit > 0
           ? Math.min(this.imagesPerPage, remainingToFetch)
           : this.imagesPerPage;
 
@@ -191,26 +208,40 @@ class AssetInventoryService {
         );
 
         const images = result.images || [];
+        totalFetched += images.length;
 
         console.log(`    Page ${Math.ceil(start / this.imagesPerPage)}: ${images.length} assets`);
 
         // Process each image
         for (const imageData of images) {
           const asset = new Asset(imageData, album);
-          albumAssets.push(asset);
+
+          // Skip videos if excludeVideos is enabled
+          if (this.excludeVideos && asset.isVideo) {
+            videosSkipped++;
+            continue;
+          }
+
           this.assets.push(asset);
+          addedCount++;
+
+          // Check if we've reached the target limit (for test mode)
+          if (targetLimit > 0 && addedCount >= targetLimit) {
+            hasMore = false;
+            break;
+          }
         }
 
         // Check if there are more pages
         const pages = result.pages;
-        hasMore = pages && pages.NextPage !== undefined;
+        hasMore = hasMore && pages && pages.NextPage !== undefined;
 
         if (hasMore) {
           start += count;
         }
 
-        // Check if we've reached the limit
-        if (limit > 0 && albumAssets.length >= limit) {
+        // Check if we've reached the fetch limit
+        if (fetchLimit > 0 && totalFetched >= fetchLimit) {
           hasMore = false;
         }
 
@@ -225,7 +256,7 @@ class AssetInventoryService {
       }
     }
 
-    return albumAssets;
+    return { added: addedCount, videosSkipped };
   }
 
   /**

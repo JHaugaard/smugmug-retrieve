@@ -1,0 +1,254 @@
+{
+  "filename": "unknown",
+  "retrievedFromSmugmug": "2025-11-25T13:05:02.428Z",
+  "isPublic": false,
+  "isProtected": false,
+  "additionalMetadata": {
+    "assetId": "sw6XxhC",
+    "imageKey": "sw6XxhC",
+    "uri": "/api/v2/album/DRLkfT/image/sw6XxhC-2",
+    "webUri": "https://haugaard.smugmug.com/Kline-Martin-Photos/i-sw6XxhC",
+    "albumUri": "/api/v2/album/DRLkfT",
+    "type": "image",
+    "isVideo": false,
+    "isImage": true,
+    "filename": "photo 8.jpg",
+    "keywords": "Car",
+    "dateUploaded": "2019-07-13T17:03:38+00:00",
+    "dateModified": "2022-02-12T21:24:12+00:00",
+    "dateTaken": "2015-02-23T01:34:44+00:00",
+    "format": "JPG",
+    "originalSize": 302011,
+    "originalHeight": 728,
+    "originalWidth": 1025,
+    "archivedUri": "https://photos.smugmug.com/Kline-Martin-Photos/i-sw6XxhC/2/LK23nn8CNJjTwLkGDk8mmt7wgvgmBkmK48MLLGtrg/D/photo%208-D.jpg",
+    "originalUri": "/api/v2/image/sw6XxhC-2!largestimage",
+    "largestImageUri": "/api/v2/image/sw6XxhC-2!largestimage",
+    "gpsLatitude": "0",
+    "gpsLongitude": "0",
+    "albumName": "Kline and Martin Photos",
+    "albumKey": "DRLkfT",
+    "rawData": {
+      "Title": "",
+      "Caption": "",
+      "Keywords": "Car",
+      "KeywordArray": [
+        "Car"
+      ],
+      "Watermark": "No",
+      "Latitude": "0",
+      "Longitude": "0",
+      "Altitude": 0,
+      "Hidden": false,
+      "ThumbnailUrl": "https://photos.smugmug.com/Kline-Martin-Photos/i-sw6XxhC/2/KMGqtf4Xn4vfHwg4fRntWrVD8x7FXkgBxMfSfrZ8J/Th/photo%208-Th.jpg",
+      "FileName": "photo 8.jpg",
+      "Processing": false,
+      "UploadKey": "8515151344",
+      "Date": "2019-07-13T17:03:38+00:00",
+      "DateTimeUploaded": "2019-07-13T17:03:38+00:00",
+      "DateTimeOriginal": "2015-02-23T01:34:44+00:00",
+      "Format": "JPG",
+      "OriginalHeight": 728,
+      "OriginalWidth": 1025,
+      "OriginalSize": 302011,
+      "LastUpdated": "2022-02-12T21:24:12+00:00",
+      "Collectable": true,
+      "IsArchive": false,
+      "IsVideo": false,
+      "ComponentFileTypes": {
+        "Image": [
+          "jpg"
+        ]
+      },
+      "CanEdit": true,
+      "CanBuy": true,
+      "Protected": false,
+      "EZProject": false,
+      "Watermarked": false,
+      "ImageKey": "sw6XxhC",
+      "Serial": 2,
+      "ArchivedUri": "https://photos.smugmug.com/Kline-Martin-Photos/i-sw6XxhC/2/LK23nn8CNJjTwLkGDk8mmt7wgvgmBkmK48MLLGtrg/D/photo%208-D.jpg",
+      "ArchivedSize": 302011,
+      "ArchivedMD5": "05547d39813d2701ea3fe1f5d49e6fae",
+      "Status": "Open",
+      "SubStatus": "NFS",
+      "CanShare": true,
+      "Comments": false,
+      "ShowKeywords": true,
+      "FormattedValues": {
+        "Caption": {
+          "html": "",
+          "text": ""
+        },
+        "FileName": {
+          "html": "photo 8.jpg",
+          "text": "photo 8.jpg"
+        }
+      },
+      "PreferredDisplayFileExtension": "JPG",
+      "Uri": "/api/v2/album/DRLkfT/image/sw6XxhC-2",
+      "WebUri": "https://haugaard.smugmug.com/Kline-Martin-Photos/i-sw6XxhC",
+      "UriDescription": "Image from album",
+      "Uris": {
+        "LargestImage": {
+          "Uri": "/api/v2/image/sw6XxhC-2!largestimage",
+          "Locator": "LargestImage",
+          "LocatorType": "Object",
+          "UriDescription": "Largest size available for image",
+          "EndpointType": "LargestImage"
+        },
+        "ImageSizes": {
+          "Uri": "/api/v2/image/sw6XxhC-2!sizes",
+          "Locator": "ImageSizes",
+          "LocatorType": "Object",
+          "UriDescription": "Sizes available for image",
+          "EndpointType": "ImageSizes"
+        },
+        "ImageSizeDetails": {
+          "Uri": "/api/v2/image/sw6XxhC-2!sizedetails",
+          "Locator": "ImageSizeDetails",
+          "LocatorType": "Object",
+          "UriDescription": "Detailed size information for image",
+          "EndpointType": "ImageSizeDetails"
+        },
+        "PointOfInterest": {
+          "Uri": "/api/v2/image/sw6XxhC-2!pointofinterest",
+          "Locator": "PointOfInterest",
+          "LocatorType": "Object",
+          "UriDescription": "Point of interest for image",
+          "EndpointType": "PointOfInterest"
+        },
+        "PointOfInterestCrops": {
+          "Uri": "/api/v2/image/sw6XxhC-2!poicrops",
+          "Locator": "PointOfInterestCrops",
+          "LocatorType": "List",
+          "UriDescription": "PointOfInterest Crops for image",
+          "EndpointType": "PointOfInterestCrops"
+        },
+        "Regions": {
+          "Uri": "/api/v2/image/sw6XxhC-2!regions",
+          "Locator": "Region",
+          "LocatorType": "Objects",
+          "UriDescription": "Regions for image",
+          "EndpointType": "Regions"
+        },
+        "ImageAlbum": {
+          "Uri": "/api/v2/album/DRLkfT",
+          "Locator": "Album",
+          "LocatorType": "Object",
+          "UriDescription": "Album by key",
+          "EndpointType": "Album"
+        },
+        "ImageOwner": {
+          "Uri": "/api/v2/user/haugaard",
+          "Locator": "User",
+          "LocatorType": "Object",
+          "UriDescription": "User By Nickname",
+          "EndpointType": "User"
+        },
+        "ImageAlbums": {
+          "Uri": "/api/v2/image/sw6XxhC-2!albums",
+          "Locator": "Album",
+          "LocatorType": "Objects",
+          "UriDescription": "Albums the image is included in",
+          "EndpointType": "ImageAlbums"
+        },
+        "ImageDownload": {
+          "Uri": "/api/v2/image/sw6XxhC-2!download",
+          "Locator": "ImageDownload",
+          "LocatorType": "Object",
+          "UriDescription": "Download image",
+          "EndpointType": "ImageDownload"
+        },
+        "RotateImage": {
+          "Uri": "/api/v2/image/sw6XxhC-2!rotate",
+          "UriDescription": "Rotate an image",
+          "EndpointType": "RotateImage"
+        },
+        "ColorImage": {
+          "Uri": "/api/v2/image/sw6XxhC-2!color",
+          "Locator": "ColorImage",
+          "LocatorType": "Object",
+          "UriDescription": "Color an image",
+          "EndpointType": "ColorImage"
+        },
+        "CopyImage": {
+          "Uri": "/api/v2/image/sw6XxhC-2!copy",
+          "UriDescription": "Copy an image",
+          "EndpointType": "CopyImage"
+        },
+        "CropImage": {
+          "Uri": "/api/v2/image/sw6XxhC-2!crop",
+          "UriDescription": "Crop an image",
+          "EndpointType": "CropImage"
+        },
+        "ImageMetadata": {
+          "Uri": "/api/v2/image/sw6XxhC-2!metadata",
+          "Locator": "ImageMetadata",
+          "LocatorType": "Object",
+          "UriDescription": "Metadata for image",
+          "EndpointType": "ImageMetadata"
+        },
+        "ImagePrices": {
+          "Uri": "/api/v2/image/sw6XxhC-2!prices",
+          "Locator": "CatalogSkuPrice",
+          "LocatorType": "Objects",
+          "UriDescription": "Purchasable Skus",
+          "EndpointType": "ImagePrices"
+        },
+        "ImagePricelistExclusions": {
+          "Uri": "/api/v2/image/sw6XxhC-2!pricelistexclusions",
+          "Locator": "ImagePricelistExclusions",
+          "LocatorType": "Object",
+          "UriDescription": "Pricelist information for an image",
+          "EndpointType": "ImagePricelistExclusions"
+        },
+        "Album": {
+          "Uri": "/api/v2/album/DRLkfT",
+          "Locator": "Album",
+          "LocatorType": "Object",
+          "UriDescription": "Album by key",
+          "EndpointType": "Album"
+        },
+        "Image": {
+          "Uri": "/api/v2/image/sw6XxhC-2",
+          "Locator": "Image",
+          "LocatorType": "Object",
+          "UriDescription": "Image by key",
+          "EndpointType": "Image"
+        },
+        "AlbumImagePricelistExclusions": {
+          "Uri": "/api/v2/album/DRLkfT/image/sw6XxhC-2!pricelistexclusions",
+          "Locator": "AlbumImagePricelistExclusions",
+          "LocatorType": "Object",
+          "UriDescription": "Pricelist information for an album image",
+          "EndpointType": "AlbumImagePricelistExclusions"
+        },
+        "AlbumImageMetadata": {
+          "Uri": "/api/v2/album/DRLkfT/image/sw6XxhC-2!metadata",
+          "Locator": "AlbumImageMetadata",
+          "LocatorType": "Object",
+          "UriDescription": "Metadata for AlbumImage",
+          "EndpointType": "AlbumImageMetadata"
+        },
+        "AlbumImageShareUris": {
+          "Uri": "/api/v2/album/DRLkfT/image/sw6XxhC-2!shareuris",
+          "Locator": "AlbumImageShareUris",
+          "LocatorType": "Object",
+          "UriDescription": "URIs that are useful for sharing",
+          "EndpointType": "AlbumImageShareUris"
+        },
+        "AlbumImageDownload": {
+          "Uri": "/api/v2/album/DRLkfT/image/sw6XxhC-2!download",
+          "Locator": "AlbumImageDownload",
+          "LocatorType": "Object",
+          "UriDescription": "Download the image from the album",
+          "EndpointType": "AlbumImageDownload"
+        }
+      },
+      "AlbumKey": "DRLkfT",
+      "Movable": true,
+      "Origin": "Album"
+    }
+  }
+}

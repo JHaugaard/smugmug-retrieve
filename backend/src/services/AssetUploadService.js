@@ -61,7 +61,7 @@ class AssetUploadService {
       let jsonFilePath = null;
 
       try {
-        metadata = this.metadataService.extractMetadata(asset.rawSmugmugData || asset, albumInfo);
+        metadata = this.metadataService.extractMetadata(asset, albumInfo);
         const jsonContent = this.metadataService.generateJsonSidecar(metadata);
 
         jsonFileName = this.metadataService.getJsonSidecarFilename(assetFileName);

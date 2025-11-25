@@ -10,7 +10,8 @@ function ConfigurationScreen({ onStart }) {
     b2ApplicationKey: '',
     b2BucketName: '',
     testMode: false,
-    testAssetLimit: 10
+    testAssetLimit: 10,
+    excludeVideos: true
   });
 
   const [oauthState, setOauthState] = useState({
@@ -130,6 +131,12 @@ function ConfigurationScreen({ onStart }) {
           authenticated: true
         }));
 
+        // Clear any SmugMug-related errors since auth succeeded
+        setErrors(prev => {
+          const { smugmug, smugmugApiKey, smugmugApiSecret, smugmugAccessToken, smugmugAccessTokenSecret, ...rest } = prev;
+          return rest;
+        });
+
         alert(`Successfully authenticated as ${data.user.name || data.user.nickName}!`);
       } else {
         setErrors(prev => ({ ...prev, smugmug: data.error }));
@@ -156,6 +163,11 @@ function ConfigurationScreen({ onStart }) {
 
       const data = await response.json();
       if (data.success) {
+        // Clear any B2-related errors since test succeeded
+        setErrors(prev => {
+          const { b2, b2AccountId, b2ApplicationKey, b2BucketName, ...rest } = prev;
+          return rest;
+        });
         alert(`BackBlaze B2 connection successful! Bucket: ${data.bucket.bucketName}`);
       } else {
         setErrors(prev => ({ ...prev, b2: data.error }));
@@ -213,7 +225,8 @@ function ConfigurationScreen({ onStart }) {
             bucketName: config.b2BucketName
           },
           testMode: config.testMode,
-          testAssetLimit: config.testAssetLimit
+          testAssetLimit: config.testAssetLimit,
+          excludeVideos: config.excludeVideos
         })
       });
 
@@ -367,6 +380,17 @@ function ConfigurationScreen({ onStart }) {
           <label>
             <input
               type="checkbox"
+              checked={config.excludeVideos}
+              onChange={(e) => handleInputChange('excludeVideos', e.target.checked)}
+            />
+            Exclude videos (download images only)
+          </label>
+        </div>
+
+        <div className="form-group checkbox-group">
+          <label>
+            <input
+              type="checkbox"
               checked={config.testMode}
               onChange={(e) => handleInputChange('testMode', e.target.checked)}
             />
@@ -393,7 +417,7 @@ function ConfigurationScreen({ onStart }) {
       <button
         onClick={handleStartMigration}
         className="start-button"
-        disabled={!oauthState.authenticated || Object.keys(errors).filter(k => k !== 'general').length > 0}
+        disabled={!oauthState.authenticated}
       >
         Start Migration
       </button>

@@ -16,7 +16,7 @@ const activeMigrations = new Map();
  */
 router.post('/start', async (req, res) => {
   try {
-    const { smugmug, backblaze, testMode, testAssetLimit } = req.body;
+    const { smugmug, backblaze, testMode, testAssetLimit, excludeVideos } = req.body;
 
     // Validate configuration
     if (!smugmug?.apiKey || !smugmug?.apiSecret) {
@@ -54,7 +54,8 @@ router.post('/start', async (req, res) => {
         bucketName: backblaze.bucketName
       },
       testMode: testMode || false,
-      testAssetLimit: testAssetLimit || 10
+      testAssetLimit: testAssetLimit || 10,
+      excludeVideos: excludeVideos !== false // Default to true
     };
 
     // Initialize MigrationOrchestrator

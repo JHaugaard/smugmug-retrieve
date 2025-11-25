@@ -8,78 +8,158 @@ class MetadataService {
   }
 
   /**
-   * Extract complete metadata from SmugMug API response
-   * @param {object} smugmugImage - Image object from SmugMug API
+   * Extract complete metadata from SmugMug API response or Asset object
+   * @param {object} source - Image object from SmugMug API or Asset object
    * @param {object} albumInfo - Album information
    * @returns {object} Structured metadata
    */
-  extractMetadata(smugmugImage, albumInfo = {}) {
+  extractMetadata(source, albumInfo = {}) {
     try {
-      // Core metadata structure following JSON sidecar schema
+      // Normalize the source - handle both raw SmugMug data and Asset objects
+      const data = this.normalizeSource(source);
+
+      // Build clean, flat metadata structure
       const metadata = {
-        filename: smugmugImage.FileName || 'unknown',
-        smugmugAssetId: smugmugImage.ImageKey || smugmugImage.AlbumImageUri || null,
-        albumName: albumInfo.name || null,
-        albumUri: albumInfo.uri || null,
-        uploadedToSmugmug: smugmugImage.UploadDate || smugmugImage.Date || null,
+        // Core identification
+        filename: data.filename,
+        smugmugAssetId: data.assetId,
+
+        // Album info
+        albumName: data.albumName || albumInfo.name || null,
+        albumKey: data.albumKey || null,
+
+        // Timestamps
         retrievedFromSmugmug: new Date().toISOString(),
+        dateTaken: data.dateTaken || null,
+        dateUploaded: data.dateUploaded || null,
+        dateModified: data.dateModified || null,
 
-        // Descriptive metadata
-        keywords: this.extractKeywords(smugmugImage),
-        title: smugmugImage.Title || null,
-        caption: smugmugImage.Caption || null,
+        // Content metadata
+        title: data.title || null,
+        caption: data.caption || null,
+        keywords: data.keywords || [],
 
-        // Date/time metadata
-        dateTimeOriginal: smugmugImage.DateTimeOriginal || smugmugImage.Date || null,
-        lastUpdated: smugmugImage.LastUpdated || null,
+        // File properties
+        format: data.format || null,
+        fileSize: data.fileSize || null,
+        dimensions: data.dimensions || null,
 
-        // EXIF data
-        exif: this.extractExifData(smugmugImage),
+        // EXIF data (if available)
+        exif: data.exif || null,
 
-        // GPS coordinates
-        gpsCoordinates: this.extractGpsCoordinates(smugmugImage),
+        // GPS coordinates (if available)
+        gpsCoordinates: data.gpsCoordinates || null,
 
-        // Technical metadata
-        format: smugmugImage.Format || null,
-        originalSize: {
-          width: smugmugImage.OriginalWidth || null,
-          height: smugmugImage.OriginalHeight || null,
-        },
-        fileSize: smugmugImage.Size || smugmugImage.ArchivedSize || null,
+        // Privacy
+        isPublic: data.isPublic || false,
+        isProtected: data.isProtected || false,
 
-        // Asset URLs (for reference)
-        smugmugUris: {
-          imageUri: smugmugImage.Uri || smugmugImage.ImageUri || null,
-          albumImageUri: smugmugImage.AlbumImageUri || null,
-          archivedUri: smugmugImage.ArchivedUri || null,
-        },
-
-        // Privacy and visibility
-        isPublic: smugmugImage.IsPublic || false,
-        isProtected: smugmugImage.IsProtected || false,
-
-        // Additional fields (catch-all for any extra metadata)
-        additionalMetadata: this.extractAdditionalMetadata(smugmugImage),
+        // SmugMug reference URLs
+        webUri: data.webUri || null,
       };
 
       // Remove null/undefined values for cleaner JSON
       return this.cleanMetadata(metadata);
     } catch (error) {
       console.error('Metadata extraction error:', error);
+      const filename = source.filename || source.FileName || 'unknown';
       this.extractionErrors.push({
-        filename: smugmugImage.FileName,
+        filename,
         error: error.message,
         timestamp: new Date().toISOString(),
       });
 
       // Return minimal metadata on error
       return {
-        filename: smugmugImage.FileName || 'unknown',
-        smugmugAssetId: smugmugImage.ImageKey || null,
+        filename,
+        smugmugAssetId: source.assetId || source.ImageKey || null,
         retrievedFromSmugmug: new Date().toISOString(),
         extractionError: error.message,
       };
     }
+  }
+
+  /**
+   * Normalize source data from either raw SmugMug API or Asset object
+   * @param {object} source - Raw data or Asset object
+   * @returns {object} Normalized data object
+   */
+  normalizeSource(source) {
+    // Check if this is an Asset object (has specific Asset properties)
+    const isAssetObject = source.rawData !== undefined ||
+                          (source.assetId !== undefined && source.getSafeFilename !== undefined);
+
+    if (isAssetObject) {
+      // Extract from Asset object
+      return {
+        filename: source.filename || source.getSafeFilename?.() || 'unknown',
+        assetId: source.assetId || source.imageKey,
+        albumName: source.albumName,
+        albumKey: source.albumKey,
+        dateTaken: source.dateTaken,
+        dateUploaded: source.dateUploaded,
+        dateModified: source.dateModified,
+        title: source.title,
+        caption: source.caption,
+        keywords: this.normalizeKeywords(source.keywords),
+        format: source.format,
+        fileSize: source.originalSize,
+        dimensions: source.originalWidth && source.originalHeight ? {
+          width: source.originalWidth,
+          height: source.originalHeight,
+        } : null,
+        exif: source.exif,
+        gpsCoordinates: source.gpsLatitude && source.gpsLongitude ? {
+          latitude: source.gpsLatitude,
+          longitude: source.gpsLongitude,
+          altitude: source.gpsAltitude || null,
+        } : null,
+        isPublic: source.isPublic || false,
+        isProtected: source.isProtected || false,
+        webUri: source.webUri,
+      };
+    }
+
+    // Handle raw SmugMug API response
+    return {
+      filename: source.FileName || source.filename || 'unknown',
+      assetId: source.ImageKey || source.assetId,
+      albumName: source.albumName,
+      albumKey: source.AlbumKey || source.albumKey,
+      dateTaken: source.DateTimeOriginal || source.dateTaken,
+      dateUploaded: source.Date || source.DateTimeUploaded || source.dateUploaded,
+      dateModified: source.LastUpdated || source.dateModified,
+      title: source.Title || source.title,
+      caption: source.Caption || source.caption,
+      keywords: this.extractKeywords(source),
+      format: source.Format || source.format,
+      fileSize: source.OriginalSize || source.ArchivedSize || source.originalSize,
+      dimensions: source.OriginalWidth && source.OriginalHeight ? {
+        width: source.OriginalWidth,
+        height: source.OriginalHeight,
+      } : null,
+      exif: this.extractExifData(source),
+      gpsCoordinates: this.extractGpsCoordinates(source),
+      isPublic: source.IsPublic || source.isPublic || false,
+      isProtected: source.Protected || source.isProtected || false,
+      webUri: source.WebUri || source.webUri,
+    };
+  }
+
+  /**
+   * Normalize keywords to array format
+   * @param {string|Array} keywords - Keywords in various formats
+   * @returns {Array<string>} Normalized array of keywords
+   */
+  normalizeKeywords(keywords) {
+    if (!keywords) return [];
+    if (Array.isArray(keywords)) return keywords.filter(k => k);
+    if (typeof keywords === 'string') {
+      // Handle semicolon-separated (SmugMug format) or comma-separated
+      const separator = keywords.includes(';') ? ';' : ',';
+      return keywords.split(separator).map(k => k.trim()).filter(k => k);
+    }
+    return [];
   }
 
   /**

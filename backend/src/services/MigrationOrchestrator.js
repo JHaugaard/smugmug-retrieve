@@ -200,7 +200,9 @@ class MigrationOrchestrator {
 
       // Apply test mode limit if enabled
       const assetLimit = this.config.testMode ? this.config.testAssetLimit : 0;
-      await inventoryService.buildInventory(assetLimit);
+
+      // Pass excludeVideos option to filter during enumeration
+      await inventoryService.buildInventory(assetLimit, this.config.excludeVideos);
 
       this.assetInventory = inventoryService;
       const assets = inventoryService.getAssets();
@@ -379,6 +381,7 @@ class MigrationOrchestrator {
         : null,
       testMode: this.config.testMode,
       testAssetLimit: this.config.testAssetLimit,
+      excludeVideos: this.config.excludeVideos,
       bucketName: this.config.backblaze.bucketName,
       errorLogPath: `${this.fileSystemManager.getPaths().logs}/error-log.json`,
       errors: errorSummary
