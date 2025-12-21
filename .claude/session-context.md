@@ -5,7 +5,12 @@ Node.js/React application for migrating ~4,600 photos/videos from SmugMug to Bac
 
 ## Current Status: ✅ WORKING END-TO-END
 
-### Latest Session (2025-11-25)
+### Current Session (2025-12-20)
+
+**Focus:** Revisiting project after time away - reorientation complete
+**MCP Servers:** None (core tools only)
+
+### Previous Session (2025-11-25)
 
 **Fixes Completed:**
 1. **Start Migration Button** - Fixed button staying grayed out after OAuth authentication
