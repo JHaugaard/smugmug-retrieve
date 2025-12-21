@@ -1,6 +1,7 @@
 import express from 'express';
 import SmugMugService from '../services/SmugMugService.js';
 import BackBlazeB2Service from '../services/BackBlazeB2Service.js';
+import LocalStorageService from '../services/LocalStorageService.js';
 import AccountDiscoveryService from '../services/AccountDiscoveryService.js';
 import AssetInventoryService from '../services/AssetInventoryService.js';
 import MigrationOrchestrator from '../services/MigrationOrchestrator.js';
@@ -16,9 +17,9 @@ const activeMigrations = new Map();
  */
 router.post('/start', async (req, res) => {
   try {
-    const { smugmug, backblaze, testMode, testAssetLimit, excludeVideos } = req.body;
+    const { smugmug, backblaze, localStorage, destinationType, testMode, testAssetLimit, excludeVideos } = req.body;
 
-    // Validate configuration
+    // Validate SmugMug configuration
     if (!smugmug?.apiKey || !smugmug?.apiSecret) {
       return res.status(400).json({
         success: false,
@@ -33,11 +34,24 @@ router.post('/start', async (req, res) => {
       });
     }
 
-    if (!backblaze?.accountId || !backblaze?.applicationKey || !backblaze?.bucketName) {
-      return res.status(400).json({
-        success: false,
-        error: 'BackBlaze B2 credentials are required'
-      });
+    // Validate storage destination based on type
+    const destType = destinationType || 'b2';
+
+    if (destType === 'local') {
+      if (!localStorage?.path) {
+        return res.status(400).json({
+          success: false,
+          error: 'Local destination path is required'
+        });
+      }
+    } else {
+      // Default to B2
+      if (!backblaze?.accountId || !backblaze?.applicationKey || !backblaze?.bucketName) {
+        return res.status(400).json({
+          success: false,
+          error: 'BackBlaze B2 credentials are required'
+        });
+      }
     }
 
     // Create migration configuration
@@ -48,11 +62,15 @@ router.post('/start', async (req, res) => {
         accessToken: smugmug.accessToken,
         accessTokenSecret: smugmug.accessTokenSecret
       },
-      backblaze: {
+      destinationType: destType,
+      backblaze: destType === 'b2' ? {
         accountId: backblaze.accountId,
         applicationKey: backblaze.applicationKey,
         bucketName: backblaze.bucketName
-      },
+      } : null,
+      localStorage: destType === 'local' ? {
+        path: localStorage.path
+      } : null,
       testMode: testMode || false,
       testAssetLimit: testAssetLimit || 10,
       excludeVideos: excludeVideos !== false // Default to true
@@ -358,6 +376,38 @@ router.post('/enumerate', async (req, res) => {
   } catch (error) {
     console.error('Enumeration error:', error);
     res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+});
+
+/**
+ * Test local path validity and writeability
+ * POST /api/migration/test/local-path
+ */
+router.post('/test/local-path', async (req, res) => {
+  try {
+    const { path: destPath } = req.body;
+
+    if (!destPath) {
+      return res.status(400).json({
+        success: false,
+        error: 'Destination path is required'
+      });
+    }
+
+    const localService = new LocalStorageService(destPath);
+    await localService.testConnection();
+
+    res.json({
+      success: true,
+      message: 'Local path is valid and writable',
+      path: destPath
+    });
+  } catch (error) {
+    console.error('Local path test error:', error);
+    res.status(400).json({
       success: false,
       error: error.message
     });

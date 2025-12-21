@@ -78,7 +78,11 @@ function CompletionSummary({ results, onStartNew }) {
       <div className="completion-note">
         <h3>Next Steps</h3>
         <ul>
-          <li>Verify assets in your BackBlaze B2 bucket: <strong>{results.bucketName}</strong></li>
+          {results.destinationType === 'local' ? (
+            <li>Verify assets in your local folder: <strong>{results.destination}</strong></li>
+          ) : (
+            <li>Verify assets in your BackBlaze B2 bucket: <strong>{results.destination || results.bucketName}</strong></li>
+          )}
           <li>Check JSON sidecar files for metadata completeness</li>
           {results.failed > 0 && (
             <li>Review error log to identify failed assets</li>

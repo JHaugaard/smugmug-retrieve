@@ -6,6 +6,8 @@ function ConfigurationScreen({ onStart }) {
     smugmugApiSecret: '',
     smugmugAccessToken: '',
     smugmugAccessTokenSecret: '',
+    destinationType: 'local', // 'local' or 'b2'
+    localPath: '',
     b2AccountId: '',
     b2ApplicationKey: '',
     b2BucketName: '',
@@ -25,7 +27,8 @@ function ConfigurationScreen({ onStart }) {
 
   const [testing, setTesting] = useState({
     smugmug: false,
-    b2: false
+    b2: false,
+    local: false
   });
 
   const [errors, setErrors] = useState({});
@@ -179,6 +182,39 @@ function ConfigurationScreen({ onStart }) {
     }
   };
 
+  const testLocalPath = async () => {
+    if (!config.localPath) {
+      setErrors(prev => ({ ...prev, local: 'Destination path is required' }));
+      return;
+    }
+
+    setTesting(prev => ({ ...prev, local: true }));
+    setErrors(prev => ({ ...prev, local: null }));
+
+    try {
+      const response = await fetch('/api/migration/test/local-path', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ path: config.localPath })
+      });
+
+      const data = await response.json();
+      if (data.success) {
+        setErrors(prev => {
+          const { local, localPath, ...rest } = prev;
+          return rest;
+        });
+        alert(`Local path validated: ${data.path}`);
+      } else {
+        setErrors(prev => ({ ...prev, local: data.error }));
+      }
+    } catch (error) {
+      setErrors(prev => ({ ...prev, local: error.message }));
+    } finally {
+      setTesting(prev => ({ ...prev, local: false }));
+    }
+  };
+
   const handleStartMigration = async () => {
     // Validate all fields
     console.log('Starting migration with config:', {
@@ -186,6 +222,8 @@ function ConfigurationScreen({ onStart }) {
       smugmugApiSecret: config.smugmugApiSecret ? 'present' : 'MISSING',
       smugmugAccessToken: config.smugmugAccessToken ? 'present' : 'MISSING',
       smugmugAccessTokenSecret: config.smugmugAccessTokenSecret ? 'present' : 'MISSING',
+      destinationType: config.destinationType,
+      localPath: config.localPath || 'MISSING',
       b2AccountId: config.b2AccountId ? 'present' : 'MISSING',
       b2ApplicationKey: config.b2ApplicationKey ? 'present' : 'MISSING',
       b2BucketName: config.b2BucketName ? 'present' : 'MISSING'
@@ -196,9 +234,15 @@ function ConfigurationScreen({ onStart }) {
     if (!config.smugmugApiSecret) newErrors.smugmugApiSecret = 'Required';
     if (!config.smugmugAccessToken) newErrors.smugmugAccessToken = 'SmugMug authentication required';
     if (!config.smugmugAccessTokenSecret) newErrors.smugmugAccessTokenSecret = 'SmugMug authentication required';
-    if (!config.b2AccountId) newErrors.b2AccountId = 'Required';
-    if (!config.b2ApplicationKey) newErrors.b2ApplicationKey = 'Required';
-    if (!config.b2BucketName) newErrors.b2BucketName = 'Required';
+
+    // Validate storage destination based on type
+    if (config.destinationType === 'local') {
+      if (!config.localPath) newErrors.localPath = 'Required';
+    } else {
+      if (!config.b2AccountId) newErrors.b2AccountId = 'Required';
+      if (!config.b2ApplicationKey) newErrors.b2ApplicationKey = 'Required';
+      if (!config.b2BucketName) newErrors.b2BucketName = 'Required';
+    }
 
     if (Object.keys(newErrors).length > 0) {
       console.error('Validation errors:', newErrors);
@@ -209,25 +253,34 @@ function ConfigurationScreen({ onStart }) {
     console.log('Validation passed, starting migration...');
 
     try {
+      const requestBody = {
+        smugmug: {
+          apiKey: config.smugmugApiKey,
+          apiSecret: config.smugmugApiSecret,
+          accessToken: config.smugmugAccessToken,
+          accessTokenSecret: config.smugmugAccessTokenSecret
+        },
+        destinationType: config.destinationType,
+        testMode: config.testMode,
+        testAssetLimit: config.testAssetLimit,
+        excludeVideos: config.excludeVideos
+      };
+
+      // Add storage-specific config
+      if (config.destinationType === 'local') {
+        requestBody.localStorage = { path: config.localPath };
+      } else {
+        requestBody.backblaze = {
+          accountId: config.b2AccountId,
+          applicationKey: config.b2ApplicationKey,
+          bucketName: config.b2BucketName
+        };
+      }
+
       const response = await fetch('/api/migration/start', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          smugmug: {
-            apiKey: config.smugmugApiKey,
-            apiSecret: config.smugmugApiSecret,
-            accessToken: config.smugmugAccessToken,
-            accessTokenSecret: config.smugmugAccessTokenSecret
-          },
-          backblaze: {
-            accountId: config.b2AccountId,
-            applicationKey: config.b2ApplicationKey,
-            bucketName: config.b2BucketName
-          },
-          testMode: config.testMode,
-          testAssetLimit: config.testAssetLimit,
-          excludeVideos: config.excludeVideos
-        })
+        body: JSON.stringify(requestBody)
       });
 
       const data = await response.json();
@@ -330,49 +383,101 @@ function ConfigurationScreen({ onStart }) {
       </section>
 
       <section className="config-section">
-        <h3>BackBlaze B2 Credentials</h3>
-        <div className="form-group">
-          <label>Account ID</label>
-          <input
-            type="text"
-            value={config.b2AccountId}
-            onChange={(e) => handleInputChange('b2AccountId', e.target.value)}
-            placeholder="Enter B2 Account ID"
-          />
-          {errors.b2AccountId && <span className="error">{errors.b2AccountId}</span>}
+        <h3>Storage Destination</h3>
+        <div className="form-group radio-group">
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="destinationType"
+              value="local"
+              checked={config.destinationType === 'local'}
+              onChange={(e) => handleInputChange('destinationType', e.target.value)}
+            />
+            Save to Local Folder
+          </label>
+          <label className="radio-label">
+            <input
+              type="radio"
+              name="destinationType"
+              value="b2"
+              checked={config.destinationType === 'b2'}
+              onChange={(e) => handleInputChange('destinationType', e.target.value)}
+            />
+            Upload to BackBlaze B2
+          </label>
         </div>
-
-        <div className="form-group">
-          <label>Application Key</label>
-          <input
-            type="password"
-            value={config.b2ApplicationKey}
-            onChange={(e) => handleInputChange('b2ApplicationKey', e.target.value)}
-            placeholder="Enter B2 Application Key"
-          />
-          {errors.b2ApplicationKey && <span className="error">{errors.b2ApplicationKey}</span>}
-        </div>
-
-        <div className="form-group">
-          <label>Bucket Name</label>
-          <input
-            type="text"
-            value={config.b2BucketName}
-            onChange={(e) => handleInputChange('b2BucketName', e.target.value)}
-            placeholder="Enter B2 Bucket Name"
-          />
-          {errors.b2BucketName && <span className="error">{errors.b2BucketName}</span>}
-        </div>
-
-        <button
-          onClick={testB2Connection}
-          disabled={!config.b2AccountId || !config.b2ApplicationKey || !config.b2BucketName || testing.b2}
-          className="test-button"
-        >
-          {testing.b2 ? 'Testing...' : 'Test B2 Connection'}
-        </button>
-        {errors.b2 && <div className="error-message">{errors.b2}</div>}
       </section>
+
+      {config.destinationType === 'local' && (
+        <section className="config-section">
+          <h3>Local Storage</h3>
+          <div className="form-group">
+            <label>Destination Folder</label>
+            <input
+              type="text"
+              value={config.localPath}
+              onChange={(e) => handleInputChange('localPath', e.target.value)}
+              placeholder="/path/to/destination/folder"
+            />
+            {errors.localPath && <span className="error">{errors.localPath}</span>}
+          </div>
+          <button
+            onClick={testLocalPath}
+            disabled={!config.localPath || testing.local}
+            className="test-button"
+          >
+            {testing.local ? 'Validating...' : 'Validate Path'}
+          </button>
+          {errors.local && <div className="error-message">{errors.local}</div>}
+        </section>
+      )}
+
+      {config.destinationType === 'b2' && (
+        <section className="config-section">
+          <h3>BackBlaze B2 Credentials</h3>
+          <div className="form-group">
+            <label>Account ID</label>
+            <input
+              type="text"
+              value={config.b2AccountId}
+              onChange={(e) => handleInputChange('b2AccountId', e.target.value)}
+              placeholder="Enter B2 Account ID"
+            />
+            {errors.b2AccountId && <span className="error">{errors.b2AccountId}</span>}
+          </div>
+
+          <div className="form-group">
+            <label>Application Key</label>
+            <input
+              type="password"
+              value={config.b2ApplicationKey}
+              onChange={(e) => handleInputChange('b2ApplicationKey', e.target.value)}
+              placeholder="Enter B2 Application Key"
+            />
+            {errors.b2ApplicationKey && <span className="error">{errors.b2ApplicationKey}</span>}
+          </div>
+
+          <div className="form-group">
+            <label>Bucket Name</label>
+            <input
+              type="text"
+              value={config.b2BucketName}
+              onChange={(e) => handleInputChange('b2BucketName', e.target.value)}
+              placeholder="Enter B2 Bucket Name"
+            />
+            {errors.b2BucketName && <span className="error">{errors.b2BucketName}</span>}
+          </div>
+
+          <button
+            onClick={testB2Connection}
+            disabled={!config.b2AccountId || !config.b2ApplicationKey || !config.b2BucketName || testing.b2}
+            className="test-button"
+          >
+            {testing.b2 ? 'Testing...' : 'Test B2 Connection'}
+          </button>
+          {errors.b2 && <div className="error-message">{errors.b2}</div>}
+        </section>
+      )}
 
       <section className="config-section">
         <h3>Migration Options</h3>

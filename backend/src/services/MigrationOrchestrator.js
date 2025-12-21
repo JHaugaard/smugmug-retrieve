@@ -3,6 +3,7 @@ import SmugMugService from './SmugMugService.js';
 import AccountDiscoveryService from './AccountDiscoveryService.js';
 import AssetInventoryService from './AssetInventoryService.js';
 import BackBlazeB2Service from './BackBlazeB2Service.js';
+import LocalStorageService from './LocalStorageService.js';
 import AssetDownloadService from './AssetDownloadService.js';
 import AssetUploadService from './AssetUploadService.js';
 import MetadataService from './MetadataService.js';
@@ -42,7 +43,7 @@ class MigrationOrchestrator {
 
     // Service instances (initialized during workflow)
     this.smugmugService = null;
-    this.b2Service = null;
+    this.storageService = null; // Either BackBlazeB2Service or LocalStorageService
     this.accountStructure = null;
     this.assetInventory = null;
 
@@ -148,20 +149,30 @@ class MigrationOrchestrator {
         `Connected to SmugMug as ${smugmugUser.user.Name}`
       );
 
-      // Initialize BackBlaze B2 service
-      this.progressTracker.setCurrentOperation('Authenticating with BackBlaze B2...');
-      const { accountId, applicationKey, bucketName } = this.config.backblaze;
-      this.b2Service = new BackBlazeB2Service(accountId, applicationKey);
-
-      await this.b2Service.testConnection(bucketName);
-      this.progressTracker.setCurrentOperation(`Connected to B2 bucket: ${bucketName}`);
+      // Initialize storage service based on destination type
+      if (this.config.destinationType === 'local') {
+        // Local storage
+        this.progressTracker.setCurrentOperation('Validating local storage path...');
+        this.storageService = new LocalStorageService(this.config.localStorage.path);
+        await this.storageService.testConnection();
+        this.progressTracker.setCurrentOperation(
+          `Local storage configured: ${this.config.localStorage.path}`
+        );
+      } else {
+        // Default: BackBlaze B2
+        this.progressTracker.setCurrentOperation('Authenticating with BackBlaze B2...');
+        const { accountId, applicationKey, bucketName } = this.config.backblaze;
+        this.storageService = new BackBlazeB2Service(accountId, applicationKey);
+        await this.storageService.testConnection(bucketName);
+        this.progressTracker.setCurrentOperation(`Connected to B2 bucket: ${bucketName}`);
+      }
 
       // Initialize file system
       await this.fileSystemManager.initialize();
       this.progressTracker.setCurrentOperation('File system initialized');
 
     } catch (error) {
-      this.errorLogger.logAuthError('SmugMug or B2 authentication', error.message);
+      this.errorLogger.logAuthError('SmugMug or storage authentication', error.message);
       throw new Error(`Authentication failed: ${error.message}`);
     }
   }
@@ -244,7 +255,7 @@ class MigrationOrchestrator {
       const uploadService = new AssetUploadService(
         downloadService,
         metadataService,
-        this.b2Service,
+        this.storageService,
         this.fileSystemManager,
         this.errorLogger,
         this.progressTracker
@@ -252,7 +263,7 @@ class MigrationOrchestrator {
 
       // Configure services
       downloadService.setConcurrencyLimit(8);
-      this.b2Service.setConcurrencyLimit(8);
+      this.storageService.setConcurrencyLimit(8);
 
       // Set up progress callbacks
       downloadService.setProgressCallback((phase, current, total, message) => {
@@ -262,7 +273,7 @@ class MigrationOrchestrator {
         );
       });
 
-      this.b2Service.setProgressCallback((phase, current, total, message) => {
+      this.storageService.setProgressCallback((phase, current, total, message) => {
         this.progressTracker.incrementUploaded();
         this.progressTracker.setCurrentOperation(
           `Uploaded ${current}/${total}: ${message}`
@@ -283,7 +294,7 @@ class MigrationOrchestrator {
 
       // Log any errors from services
       const downloadErrors = downloadService.getErrors();
-      const uploadErrors = this.b2Service.getUploadErrors();
+      const uploadErrors = this.storageService.getUploadErrors();
 
       downloadErrors.forEach(err => {
         this.errorLogger.logDownloadError(
@@ -382,7 +393,10 @@ class MigrationOrchestrator {
       testMode: this.config.testMode,
       testAssetLimit: this.config.testAssetLimit,
       excludeVideos: this.config.excludeVideos,
-      bucketName: this.config.backblaze.bucketName,
+      destinationType: this.config.destinationType || 'b2',
+      destination: this.config.destinationType === 'local'
+        ? this.config.localStorage.path
+        : this.config.backblaze?.bucketName,
       errorLogPath: `${this.fileSystemManager.getPaths().logs}/error-log.json`,
       errors: errorSummary
     };

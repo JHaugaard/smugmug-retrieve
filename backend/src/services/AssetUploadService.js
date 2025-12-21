@@ -8,14 +8,14 @@ class AssetUploadService {
   constructor(
     assetDownloadService,
     metadataService,
-    b2Service,
+    storageService,
     fileSystemManager,
     errorLogger,
     progressTracker
   ) {
     this.downloadService = assetDownloadService;
     this.metadataService = metadataService;
-    this.b2Service = b2Service;
+    this.storageService = storageService;
     this.fsManager = fileSystemManager;
     this.errorLogger = errorLogger;
     this.progressTracker = progressTracker;
@@ -75,12 +75,12 @@ class AssetUploadService {
         // Continue with upload even if metadata extraction fails
       }
 
-      // Step 3: Upload asset to B2
-      this.progressTracker.setCurrentOperation(`Uploading ${assetFileName} to B2`);
+      // Step 3: Upload asset to storage
+      this.progressTracker.setCurrentOperation(`Uploading ${assetFileName}`);
       const assetData = await this.fsManager.readFile(assetFileName);
       const contentType = this.getContentType(assetFileName);
 
-      const uploadResult = await this.b2Service.uploadFileWithRetry(
+      const uploadResult = await this.storageService.uploadFileWithRetry(
         assetData,
         assetFileName,
         contentType
@@ -107,7 +107,7 @@ class AssetUploadService {
         this.progressTracker.setCurrentOperation(`Uploading metadata for ${assetFileName}`);
         const jsonData = await this.fsManager.readFile(jsonFileName);
 
-        const jsonUploadResult = await this.b2Service.uploadFileWithRetry(
+        const jsonUploadResult = await this.storageService.uploadFileWithRetry(
           jsonData,
           jsonFileName,
           'application/json'
@@ -240,7 +240,7 @@ class AssetUploadService {
   getStats() {
     return {
       download: this.downloadService.getStats(),
-      upload: this.b2Service.getUploadStats(),
+      upload: this.storageService.getUploadStats(),
       errors: this.errorLogger.getErrorSummary(),
       progress: this.progressTracker.getSummary(),
     };
