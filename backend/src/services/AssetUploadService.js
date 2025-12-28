@@ -212,6 +212,10 @@ class AssetUploadService {
       '.flv': 'video/x-flv',
       '.webm': 'video/webm',
       '.mkv': 'video/x-matroska',
+      '.psd': 'image/vnd.adobe.photoshop',
+      '.arw': 'image/x-sony-arw',
+      '.dop': 'application/octet-stream',
+      '.xmp': 'application/rdf+xml',
     };
 
     return mimeTypes[ext] || 'application/octet-stream';

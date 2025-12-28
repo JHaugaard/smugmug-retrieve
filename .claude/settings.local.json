@@ -1,0 +1,40 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npm install)",
+      "Bash(curl:*)",
+      "Bash(python3:*)",
+      "Bash(lsof:*)",
+      "Bash(xargs kill -9)",
+      "Bash(node --check:*)",
+      "Bash(npm install:*)",
+      "Bash(cat:*)",
+      "Bash(npm start)",
+      "Bash(bash:*)",
+      "Bash(export SMUGMUG_SECRET=\"5k4XNQV5W5xGqLmxzTwjRQ7NdwxqkSw5Sjk2hRjKxxpsBbk33bHVWTJHvVsphh6g\")",
+      "Bash(export SMUGMUG_ACCESS_TOKEN=\"KzqQzhG22KwPGJQZRfCBfv6nwSbpbsS9\")",
+      "Bash(export SMUGMUG_ACCESS_SECRET=\"CzFVrTLkBrh4hdKsJRxHzv7tJLrqcL8bPWgcp8pfjG2p5b4bz864H65KTcP8gBDh\")",
+      "Bash(find:*)",
+      "Bash(git merge-base:*)",
+      "Bash(git branch:*)",
+      "Bash(git push:*)",
+      "Bash(git worktree:*)",
+      "Bash(wc:*)",
+      "Bash(git -C /Volumes/dev/develop/smugmug-retrieve log --oneline)",
+      "Bash(git -C /Volumes/dev/develop/smugmug-retrieve status)",
+      "Bash(git fetch:*)",
+      "Bash(git pull:*)",
+      "Bash(git add:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nUpdate session context for 2025-12-20\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git checkout:*)",
+      "Bash(git commit -m \"$\\(cat <<''EOF''\nAdd local folder save option as alternative to B2 upload\n\n- Add LocalStorageService matching B2 interface for local file saves\n- Add destination type radio buttons \\(Local/B2\\) in ConfigurationScreen\n- Add /api/migration/test/local-path endpoint for path validation\n- Update MigrationOrchestrator to conditionally use storage service\n- Rename b2Service to storageService throughout for clarity\n- Update CompletionSummary to display destination appropriately\n\n🤖 Generated with [Claude Code]\\(https://claude.com/claude-code\\)\n\nCo-Authored-By: Claude Opus 4.5 <noreply@anthropic.com>\nEOF\n\\)\")",
+      "Bash(git merge:*)",
+      "Bash(ls:*)"
+    ],
+    "deny": [],
+    "ask": []
+  },
+  "disabledMcpjsonServers": [
+    "zen"
+  ]
+}

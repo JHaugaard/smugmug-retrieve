@@ -7,8 +7,28 @@ Node.js/React application for migrating ~4,600 photos/videos from SmugMug to Bac
 
 ### Current Session (2025-12-20)
 
-**Focus:** Revisiting project after time away - reorientation complete
+**Focus:** Added local folder save option
 **MCP Servers:** None (core tools only)
+**Status:** Completed
+
+**Feature Added:**
+
+- Local folder save as alternative to B2 upload
+- Radio button choice: Local or B2
+- Path validation endpoint (`/api/migration/test/local-path`)
+- `LocalStorageService` matching B2 interface
+- Successfully tested with full migration
+
+**Files Changed:**
+
+- `backend/src/services/LocalStorageService.js` (new)
+- `backend/src/routes/migration.routes.js`
+- `backend/src/services/MigrationOrchestrator.js`
+- `backend/src/services/AssetUploadService.js`
+- `frontend/src/components/ConfigurationScreen.jsx`
+- `frontend/src/components/CompletionSummary.jsx`
+
+**Git:** Merged to main (`d1af3e3`)
 
 ### Previous Session (2025-11-25)
 
