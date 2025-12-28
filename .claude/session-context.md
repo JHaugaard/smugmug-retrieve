@@ -5,7 +5,32 @@ Node.js/React application for migrating ~4,600 photos/videos from SmugMug to Bac
 
 ## Current Status: ✅ WORKING END-TO-END
 
-### Current Session (2025-12-20)
+### Current Session (2025-12-28)
+
+**Focus:** JSON metadata cleanup and file type investigation
+**MCP Servers:** None (core tools only)
+**Status:** Completed - PROJECT RETIRED
+
+**Work Done:**
+
+1. Created Python script to clean/rename 1063 JSON metadata files
+   - Renamed `*.jpg.json` → `*.json`
+   - Trimmed content to only: filename, keywords, format, fileSize, dimensions
+   - Script: `cleanup/clean-json-files.py`
+
+2. Added MIME types for additional file formats (PSD, ARW, DOP, XMP)
+   - `backend/src/services/AssetUploadService.js:215-218`
+
+3. Investigated 404 errors on PSD/ARW/XMP/DOP downloads
+   - SmugMug API doesn't provide download URLs for these formats
+   - Canon raws (CR2, CRW) and DNG worked fine
+   - User has these files elsewhere - not pursuing further
+
+**Project Status:** RETIRED - No more SmugMug accounts to migrate
+
+---
+
+### Previous Session (2025-12-20)
 
 **Focus:** Added local folder save option
 **MCP Servers:** None (core tools only)
